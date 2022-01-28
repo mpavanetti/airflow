@@ -3,6 +3,7 @@ from airflow.models import DAG
 from airflow.operators.dummy import DummyOperator
 from airflow.hooks.base import BaseHook
 from airflow.models import Variable
+from airflow.providers.http.sensors.http import HttpSensor
 
 
 # Importing Python Libraries
@@ -38,6 +39,21 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
         task_id='Start'
     )
     
+    # Create Http Sensor Operator
+    check_api = HttpSensor(
+        task_id='check_api',
+        http_conn_id='openweathermapApi',
+        endpoint=Variable.get("weather_data_endpoint"),
+        method='GET',
+        response_check=lambda response: True if response.status_code == 200 else False,
+        poke_interval=5,
+        timeout=60,
+        retries=2,
+        mode="reschedule",
+        soft_fail=True,
+        request_params = api_params
+    )
+    
     # DAG Dependencies
-    start
+    start >> check_api
     
