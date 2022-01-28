@@ -80,7 +80,7 @@ def _store_location_csv():
     })
     
     # Store Location
-    location_df.to_csv(f'/{tmp_data_dir}location.csv', sep='|', index=None, header=False)
+    location_df.to_csv(f'{tmp_data_dir}location.csv', sep='|', index=None, header=False)
 
 # DAG Skeleton
 with DAG('weather_data', schedule_interval='@daily',default_args=default_args, catchup=False) as dag:
