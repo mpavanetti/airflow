@@ -12,6 +12,7 @@ from airflow.providers.http.operators.http import SimpleHttpOperator
 from datetime import datetime, timedelta
 import time
 import json
+import os
 
 
 # Default Arguments and attibutes
@@ -26,6 +27,9 @@ todayLessFiveDaysTimestamp = time.mktime(todayLessFiveDays.timetuple())
 # Get Connection from airflow db
 connection = BaseHook.get_connection("openweathermapApi")
 
+# Get Variables
+tmp_data_dir = Variable.get("weather_data_tmp_directory")
+
 # weather data api query params
 api_params = {
     'lat':Variable.get("weather_data_lat"),
@@ -39,12 +43,24 @@ api_params = {
 def _notify(ti):
     raise ValueError('Api Not Available')
 
+# Tmp Data Check
+def _tmp_data():
+    # Checking if directories exist
+    if not os.path.exists(tmp_data_dir):
+        os.mkdir(tmp_data_dir)
+
 # DAG Skeleton
 with DAG('weather_data', schedule_interval='@daily',default_args=default_args, catchup=False) as dag:
     
     # Start
     start = DummyOperator(
         task_id='Start'
+    )
+    
+    # Temp Data 
+    tmp_data = PythonOperator(
+        task_id='tmp_data',
+        python_callable=_tmp_data
     )
     
     # Create Http Sensor Operator
@@ -82,5 +98,6 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
     )
     
     # DAG Dependencies
+    start >> tmp_data >> check_api >> [extracting_weather,api_not_available]
     start >> check_api >> [extracting_weather,api_not_available]
     
