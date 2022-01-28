@@ -29,7 +29,7 @@ todayLessFiveDays =  datetime.today() - timedelta(days=5)
 todayLessFiveDaysTimestamp = time.mktime(todayLessFiveDays.timetuple())
 
 # Get Connection from airflow db
-connection = BaseHook.get_connection("openweathermapApi")
+api_connection = BaseHook.get_connection("openweathermapApi")
 
 # Get Variables
 latitude = Variable.get("weather_data_lat")
@@ -43,7 +43,7 @@ api_params = {
     'lon':longitude,
     'units':units,
     'dt':int(todayLessFiveDaysTimestamp),
-    'appid':connection.password,
+    'appid':api_connection.password,
 }
 
 # Notify, Email
