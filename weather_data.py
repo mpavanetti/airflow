@@ -8,6 +8,7 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.providers.sqlite.operators.sqlite import SqliteOperator
+from airflow.operators.bash import BashOperator
 
 
 # Importing Python Libraries
@@ -30,6 +31,7 @@ todayLessFiveDaysTimestamp = time.mktime(todayLessFiveDays.timetuple())
 
 # Get Connection from airflow db
 api_connection = BaseHook.get_connection("openweathermapApi")
+sqlite_connection = BaseHook.get_connection("db_sqlite")
 
 # Get Variables
 latitude = Variable.get("weather_data_lat")
@@ -163,10 +165,17 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
             task_id='store_location_csv',
             python_callable=_store_location_csv
         )
+        
+    # TaskGroup for Storing CSV Files into SQLITE tables
+    with TaskGroup('storing_csv_to_sqlite') as storing_csv_to_sqlite:
+        
+        storing_location= BashOperator(
+        task_id='storing_location',
+        bash_command=f'echo -e ".separator "\|"\n.import {tmp_data_dir}location.csv location" | sqlite3 {sqlite_connection.host}'
+    )
     
     
     # DAG Dependencies
     start >> tmp_data >> check_api >> [extracting_weather,api_not_available]
-    extracting_weather >> create_sqlite_tables
-    create_sqlite_tables >> processing_data
+    extracting_weather >> create_sqlite_tables >> processing_data >> storing_csv_to_sqlite
     
