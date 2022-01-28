@@ -6,6 +6,7 @@ from airflow.models import Variable
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.operators.python import PythonOperator
 from airflow.providers.http.operators.http import SimpleHttpOperator
+from airflow.utils.task_group import TaskGroup
 
 
 # Importing Python Libraries
@@ -13,6 +14,8 @@ from datetime import datetime, timedelta
 import time
 import json
 import os
+from pandas import json_normalize
+from geopy.geocoders import Nominatim
 
 
 # Default Arguments and attibutes
@@ -28,13 +31,16 @@ todayLessFiveDaysTimestamp = time.mktime(todayLessFiveDays.timetuple())
 connection = BaseHook.get_connection("openweathermapApi")
 
 # Get Variables
+latitude = Variable.get("weather_data_lat")
+longitude = Variable.get("weather_data_lon")
+units = Variable.get("weather_data_units")
 tmp_data_dir = Variable.get("weather_data_tmp_directory")
 
 # weather data api query params
 api_params = {
-    'lat':Variable.get("weather_data_lat"),
-    'lon':Variable.get("weather_data_lon"),
-    'units':Variable.get("weather_data_units"),
+    'lat':latitude,
+    'lon':longitude,
+    'units':units,
     'dt':int(todayLessFiveDaysTimestamp),
     'appid':connection.password,
 }
@@ -48,6 +54,32 @@ def _tmp_data():
     # Checking if directories exist
     if not os.path.exists(tmp_data_dir):
         os.mkdir(tmp_data_dir)
+
+# Processing and Deduplicating Weather API Data
+def _store_location_csv():
+    
+    # Invoking geo locator api and getting address from latitude and longitude
+    geolocator = Nominatim(user_agent="geoapiExercises")
+    location = geolocator.reverse(latitude+","+longitude)
+    address = location.raw['address']
+
+    # Process location data
+    location_df = json_normalize({
+        'latitude':latitude,
+        'logitude': longitude,
+        'tourism':address['tourism'],
+        'road':address['road'],
+        'neighbourhood':address['neighbourhood'],
+        'city':address['city'],
+        'county':address['county'],
+        'state':address['state'],
+        'postcode':address['postcode'],
+        'country':address['country'],
+        'country_code':address['country_code']
+    })
+    
+    # Store Location
+    location_df.to_csv(f'/{tmp_data_dir}location.csv', sep='|', index=None, header=False)
 
 # DAG Skeleton
 with DAG('weather_data', schedule_interval='@daily',default_args=default_args, catchup=False) as dag:
@@ -97,7 +129,17 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
         trigger_rule='all_success'
     )
     
+    # TaskGroup for Processing Data
+    with TaskGroup('processing_data') as processing_data:
+        
+        # Store Location Data
+        store_location_csv = PythonOperator(
+            task_id='store_location_csv',
+            python_callable=_store_location_csv
+        )
+    
+    
     # DAG Dependencies
     start >> tmp_data >> check_api >> [extracting_weather,api_not_available]
-    start >> check_api >> [extracting_weather,api_not_available]
+    extracting_weather >> processing_data
     
