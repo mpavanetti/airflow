@@ -174,8 +174,14 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
         bash_command=f'echo -e ".separator "\|"\n.import {tmp_data_dir}location.csv location" | sqlite3 {sqlite_connection.host}'
     )
     
+    # Cleanup task    
+    cleanup= BashOperator(
+        task_id='cleanup',
+        bash_command=f'echo -e rm -r -f {tmp_data_dir}'
+    )
+    
     
     # DAG Dependencies
     start >> tmp_data >> check_api >> [extracting_weather,api_not_available]
-    extracting_weather >> create_sqlite_tables >> processing_data >> storing_csv_to_sqlite
+    extracting_weather >> create_sqlite_tables >> processing_data >> storing_csv_to_sqlite >> cleanup
     
