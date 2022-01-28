@@ -7,6 +7,7 @@ from airflow.providers.http.sensors.http import HttpSensor
 from airflow.operators.python import PythonOperator
 from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.utils.task_group import TaskGroup
+from airflow.providers.sqlite.operators.sqlite import SqliteOperator
 
 
 # Importing Python Libraries
@@ -130,6 +131,31 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
     )
     
     # TaskGroup for Processing Data
+    with TaskGroup('create_sqlite_tables') as create_sqlite_tables:
+        
+    # Create table Location
+        creating_table_location = SqliteOperator(
+            task_id='creating_table_location',
+            sqlite_conn_id='db_sqlite',
+            sql='''
+                CREATE TABLE IF NOT EXISTS location (
+                    latitude TEXT NOT NULL,
+                    longitude TEXT NOT NULL,
+                    tourism TEXT NULL,
+                    road TEXT NULL,
+                    neighbourhood TEXT NULL,
+                    city TEXT NULL,
+                    county TEXT NULL,
+                    state TEXT NULL,
+                    postcode TEXT NULL,
+                    country TEXT NULL,
+                    country_code TEXT NULL,
+                    PRIMARY KEY (latitude,longitude)
+                );
+                '''
+        )
+    
+    # TaskGroup for Processing Data
     with TaskGroup('processing_data') as processing_data:
         
         # Store Location Data
@@ -141,5 +167,6 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
     
     # DAG Dependencies
     start >> tmp_data >> check_api >> [extracting_weather,api_not_available]
-    extracting_weather >> processing_data
+    extracting_weather >> create_sqlite_tables
+    create_sqlite_tables >> processing_data
     
