@@ -5,11 +5,13 @@ from airflow.hooks.base import BaseHook
 from airflow.models import Variable
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.operators.python import PythonOperator
+from airflow.providers.http.operators.http import SimpleHttpOperator
 
 
 # Importing Python Libraries
 from datetime import datetime, timedelta
 import time
+import json
 
 
 # Default Arguments and attibutes
@@ -66,6 +68,18 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
         trigger_rule='one_failed'
     )
     
+    # Extract User Records Simple Http Operator
+    extracting_weather = SimpleHttpOperator(
+        task_id='extracting_weather',
+        http_conn_id='openweathermapApi',
+        endpoint='data/2.5/onecall/timemachine',
+        method='GET',
+        response_filter=lambda response: json.loads(response.text),
+        data = api_params,
+        log_response=True,
+        trigger_rule='all_success'
+    )
+    
     # DAG Dependencies
-    start >> check_api
+    start >> check_api >> [extracting_weather,api_not_available]
     
