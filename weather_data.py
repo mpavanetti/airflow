@@ -30,6 +30,7 @@ connection = BaseHook.get_connection("openweathermapApi")
 api_params = {
     'lat':Variable.get("weather_data_lat"),
     'lon':Variable.get("weather_data_lon"),
+    'units':Variable.get("weather_data_units"),
     'dt':int(todayLessFiveDaysTimestamp),
     'appid':connection.password,
 }
