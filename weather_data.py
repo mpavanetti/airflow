@@ -4,6 +4,7 @@ from airflow.operators.dummy import DummyOperator
 from airflow.hooks.base import BaseHook
 from airflow.models import Variable
 from airflow.providers.http.sensors.http import HttpSensor
+from airflow.operators.python import PythonOperator
 
 
 # Importing Python Libraries
@@ -31,6 +32,10 @@ api_params = {
     'appid':connection.password,
 }
 
+# Notify, Email
+def _notify(ti):
+    raise ValueError('Api Not Available')
+
 # DAG Skeleton
 with DAG('weather_data', schedule_interval='@daily',default_args=default_args, catchup=False) as dag:
     
@@ -52,6 +57,13 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
         mode="reschedule",
         soft_fail=True,
         request_params = api_params
+    )
+    
+    # Api is not available
+    api_not_available = PythonOperator(
+        task_id='api_not_available',
+        python_callable=_notify,
+        trigger_rule='one_failed'
     )
     
     # DAG Dependencies
