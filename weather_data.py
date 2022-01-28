@@ -130,7 +130,7 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
         trigger_rule='all_success'
     )
     
-    # TaskGroup for Processing Data
+    # TaskGroup for Creating SQLITE tables
     with TaskGroup('create_sqlite_tables') as create_sqlite_tables:
         
     # Create table Location
