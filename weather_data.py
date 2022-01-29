@@ -45,6 +45,21 @@ longitude = Variable.get("weather_data_lon")
 units = Variable.get("weather_data_units")
 tmp_data_dir = Variable.get("weather_data_tmp_directory")
 
+# Suggested Locations
+
+suggested_locations = (
+      ['30.318878','-81.690173'],
+      ['28.538336','-81.379234'],
+      ['27.950575','-82.457176'],
+      ['25.761681','-80.191788'],
+      ['34.052235','-118.243683'],
+      ['40.712776','-74.005974'],
+      ['41.878113','-87.629799'],
+      ['32.776665','-96.796989'],
+      ['47.950356','-124.385490'],
+      ['36.169941','-115.139832']
+)
+
 # weather data api query params
 api_params = {
     'lat':latitude,
@@ -79,18 +94,24 @@ def create_connection():
         print(e)
     return conn
 
+def _store_location_csv_iterative():
+    for lat,long in suggested_locations:
+        _store_location_csv(lat,long)
+   
+
 # Processing and Deduplicating Weather API Data
-def _store_location_csv():
+def _store_location_csv(lat,long):
     
     # Invoking geo locator api and getting address from latitude and longitude
     geolocator = Nominatim(user_agent="weather_data")
-    location = geolocator.reverse(latitude+","+longitude)
+    location = geolocator.reverse(lat+","+long)
     address = location.raw['address']
+    #current = datetime.today().strftime('%Y%m%d%H%M%S%f')
     
     # Process location data
     location_df = json_normalize({
-        'latitude':latitude,
-        'logitude': longitude,
+        'latitude':lat,
+        'logitude': long,
         'city':address.get('city'),
         'state':address.get('state'),
         'postcode':address.get('postcode'),
@@ -98,7 +119,7 @@ def _store_location_csv():
     })
     
     # Store Location
-    location_df.to_csv(f'{tmp_data_dir}location.csv', sep=',', index=None, header=False)
+    location_df.to_csv(f'{tmp_data_dir}location.csv', mode='a', sep=',', index=None, header=False)
 
 # Store Location SQLite
 def _store_location_sqlite():
@@ -355,7 +376,7 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
         # Store Location Data
         store_location_csv = PythonOperator(
             task_id='store_location_csv',
-            python_callable=_store_location_csv
+            python_callable=_store_location_csv_iterative
         )
         
         # Store Current Weather Data
