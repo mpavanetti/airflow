@@ -85,21 +85,16 @@ def _store_location_csv():
     # Invoking geo locator api and getting address from latitude and longitude
     geolocator = Nominatim(user_agent="weather_data")
     location = geolocator.reverse(latitude+","+longitude)
-    #address = location.raw['address']
-    address = str(location).split(", ")
-    print(address)
+    address = location.raw['address']
+    
     # Process location data
     location_df = json_normalize({
         'latitude':latitude,
         'logitude': longitude,
-        'number':address[0],
-        'road':address[1],
-        'neighbourhood':address[2],
-        'city':address[3],
-        'county':address[4],
-        'state':address[5],
-        'postcode':address[6],
-        'country':address[7]
+        'city':address.get('city'),
+        'state':address.get('state'),
+        'postcode':address.get('postcode'),
+        'country':address.get('country')
     })
     
     # Store Location
@@ -110,7 +105,7 @@ def _store_location_sqlite():
     conn = create_connection()
     cur = conn.cursor()
     reader = csv.reader(open(f'{tmp_data_dir}location.csv'))
-    cur.executemany('INSERT OR IGNORE INTO location VALUES (?,?,?,?,?,?,?,?,?,?)',reader)
+    cur.executemany('INSERT OR IGNORE INTO location VALUES (?,?,?,?,?,?)',reader)
     conn.commit()
  
    
@@ -286,11 +281,7 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
                 CREATE TABLE IF NOT EXISTS location (
                     latitude TEXT NOT NULL,
                     longitude TEXT NOT NULL,
-                    number TEXT NULL,
-                    road TEXT NULL,
-                    neighbourhood TEXT NULL,
                     city TEXT NULL,
-                    county TEXT NULL,
                     state TEXT NULL,
                     postcode TEXT NULL,
                     country TEXT NULL,
