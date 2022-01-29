@@ -98,11 +98,62 @@ def _store_location_csv():
 def _store_location_sqlite():
     conn = create_connection()
     cur = conn.cursor()
-    reader = csv.reader(open(f'{tmp_data_dir}location.csv', "rt"))
-    for latitude, longitude, number, road, neighbourhood, city, county, state, postcode, country  in reader:
-        cur.execute('INSERT OR IGNORE INTO location (latitude, longitude, number, road, neighbourhood, city, county, state, postcode, country) VALUES (?,?,?,?,?,?,?,?,?,?)',
-                    (latitude, longitude, number, road, neighbourhood, city, county, state, postcode, country))
+    reader = csv.reader(open(f'{tmp_data_dir}location.csv'))
+    cur.executemany('INSERT OR IGNORE INTO location VALUES (?,?,?,?,?,?,?,?,?,?)',reader)
     conn.commit()
+ 
+   
+def store_weather_response(ti):
+    weather_response = ti.xcom_pull(task_ids=['extracting_weather'])
+  
+    # Checking if the json array is not empty
+    if not len(weather_response):
+        raise ValueError('Weather json array is empty')
+    weather = weather_response[0]
+    return weather
+
+def timestampToDate(ts):
+    return datetime.utcfromtimestamp(int(ts)).strftime('%Y-%m-%d %H:%M')
+
+def _store_requested_weather_csv(ti):
+    weather= store_weather_response(ti)
+    requested=weather['current']
+    
+    requested_weather_df = json_normalize({
+        'latitude':weather['lat'],
+        'longitude':weather['lon'],
+        'timezone':weather['timezone'],
+        'requested_datetime':timestampToDate(requested['dt']),
+        'sunrise':timestampToDate(requested['sunrise']),
+        'sunset':timestampToDate(requested['sunset']),
+        'temp':requested['temp'],
+        'feels_like':requested['feels_like'],
+        'pressure':requested['pressure'],
+        'humidity':requested['humidity'],
+        'dew_point':requested['dew_point'],
+        'uvi':requested['uvi'],
+        'clouds':requested['clouds'],
+        'visibility':requested['visibility'],
+        'wind_speed':requested['wind_speed'],
+        'wind_deg':requested['wind_deg'],
+        'weather_id':requested['weather'][0]['id'],
+        'weather_main':requested['weather'][0]['main'],
+        'weather_description':requested['weather'][0]['description'],
+        'weather_icon':requested['weather'][0]['icon']
+    })
+    
+     # Store Requested
+    requested_weather_df.to_csv(f'{tmp_data_dir}requested.csv', sep=',', index=None, header=False)
+    
+
+# Store Requested Weather SQLite
+def _store_requested_weather_sqlite():
+    conn = create_connection()
+    cur = conn.cursor()
+    reader = csv.reader(open(f'{tmp_data_dir}requested.csv'))
+    cur.executemany('INSERT OR IGNORE INTO requested_weather VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',reader)
+    conn.commit()
+
 
 # DAG Skeleton
 with DAG('weather_data', schedule_interval='@daily',default_args=default_args, catchup=False) as dag:
@@ -175,6 +226,36 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
                 );
                 '''
         )
+        
+        creating_table_requested_weather = SqliteOperator(
+            task_id='creating_table_requested_weather',
+            sqlite_conn_id='db_sqlite',
+            sql='''
+                CREATE TABLE IF NOT EXISTS requested_weather (
+                    latitude TEXT NOT NULL,
+                    longitude TEXT NOT NULL,
+                    timezone TEXT NOT NULL,
+                    requested_datetime TEXT NULL,
+                    sunrise TEXT NULL,
+                    sunset TEXT NULL,
+                    temp TEXT NULL,
+                    feels_like TEXT NULL,
+                    pressure TEXT NULL,
+                    humidity TEXT NULL,
+                    dew_point TEXT NULL,
+                    uvi TEXT NULL,
+                    clouds TEXT NULL,
+                    visibility TEXT NULL,
+                    wind_speed TEXT NULL,
+                    wind_deg TEXT NULL,
+                    weather_id TEXT NULL,
+                    weather_main TEXT NULL,
+                    weather_description TEXT NULL,
+                    weather_icon TEXT NULL,
+                    PRIMARY KEY (latitude,longitude,requested_datetime)
+                );
+                '''
+        )
     
     # TaskGroup for Processing Data
     with TaskGroup('processing_data') as processing_data:
@@ -185,12 +266,23 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
             python_callable=_store_location_csv
         )
         
+        # Store Current Weather Data
+        store_requested_weather_csv = PythonOperator(
+            task_id='store_requested_weather_csv',
+            python_callable=_store_requested_weather_csv
+        )
+        
     # TaskGroup for Storing CSV Files into SQLITE tables
     with TaskGroup('storing_csv_to_sqlite') as storing_csv_to_sqlite:
         
         store_location_sqlite=PythonOperator(
             task_id='store_location_sqlite',
             python_callable=_store_location_sqlite
+        )
+        
+        store_requested_weather_sqlite=PythonOperator(
+            task_id='store_requested_weather_sqlite',
+            python_callable=_store_requested_weather_sqlite
         )
     
     # Cleanup task    
