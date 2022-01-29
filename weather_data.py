@@ -177,7 +177,7 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
     # Cleanup task    
     cleanup= BashOperator(
         task_id='cleanup',
-        bash_command=f'echo -e rm -r -f {tmp_data_dir}'
+        bash_command=f'rm -r {tmp_data_dir}'
     )
     
     
