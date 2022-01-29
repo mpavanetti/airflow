@@ -18,6 +18,7 @@ import json
 import os
 from pandas import json_normalize
 from geopy.geocoders import Nominatim
+import csv, sqlite3
 
 
 # Default Arguments and attibutes
@@ -57,32 +58,51 @@ def _tmp_data():
     # Checking if directories exist
     if not os.path.exists(tmp_data_dir):
         os.mkdir(tmp_data_dir)
+        
+# create a database connection to the SQLite database specified by db_file    
+def create_connection():
+    conn = None
+    try:
+        conn = sqlite3.connect(sqlite_connection.host)
+    except Error as e:
+        print(e)
+    return conn
 
 # Processing and Deduplicating Weather API Data
 def _store_location_csv():
     
     # Invoking geo locator api and getting address from latitude and longitude
-    geolocator = Nominatim(user_agent="geoapiExercises")
+    geolocator = Nominatim(user_agent="weather_data")
     location = geolocator.reverse(latitude+","+longitude)
-    address = location.raw['address']
-
+    #address = location.raw['address']
+    address = str(location).split(", ")
+    print(address)
     # Process location data
     location_df = json_normalize({
         'latitude':latitude,
         'logitude': longitude,
-        'tourism':address['tourism'],
-        'road':address['road'],
-        'neighbourhood':address['neighbourhood'],
-        'city':address['city'],
-        'county':address['county'],
-        'state':address['state'],
-        'postcode':address['postcode'],
-        'country':address['country'],
-        'country_code':address['country_code']
+        'number':address[0],
+        'road':address[1],
+        'neighbourhood':address[2],
+        'city':address[3],
+        'county':address[4],
+        'state':address[5],
+        'postcode':address[6],
+        'country':address[7]
     })
     
     # Store Location
-    location_df.to_csv(f'{tmp_data_dir}location.csv', sep='|', index=None, header=False)
+    location_df.to_csv(f'{tmp_data_dir}location.csv', sep=',', index=None, header=False)
+
+# Store Location SQLite
+def _store_location_sqlite():
+    conn = create_connection()
+    cur = conn.cursor()
+    reader = csv.reader(open(f'{tmp_data_dir}location.csv', "rt"))
+    for latitude, longitude, number, road, neighbourhood, city, county, state, postcode, country  in reader:
+        cur.execute('INSERT OR IGNORE INTO location (latitude, longitude, number, road, neighbourhood, city, county, state, postcode, country) VALUES (?,?,?,?,?,?,?,?,?,?)',
+                    (latitude, longitude, number, road, neighbourhood, city, county, state, postcode, country))
+    conn.commit()
 
 # DAG Skeleton
 with DAG('weather_data', schedule_interval='@daily',default_args=default_args, catchup=False) as dag:
@@ -143,7 +163,7 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
                 CREATE TABLE IF NOT EXISTS location (
                     latitude TEXT NOT NULL,
                     longitude TEXT NOT NULL,
-                    tourism TEXT NULL,
+                    number TEXT NULL,
                     road TEXT NULL,
                     neighbourhood TEXT NULL,
                     city TEXT NULL,
@@ -151,7 +171,6 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
                     state TEXT NULL,
                     postcode TEXT NULL,
                     country TEXT NULL,
-                    country_code TEXT NULL,
                     PRIMARY KEY (latitude,longitude)
                 );
                 '''
@@ -169,10 +188,10 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
     # TaskGroup for Storing CSV Files into SQLITE tables
     with TaskGroup('storing_csv_to_sqlite') as storing_csv_to_sqlite:
         
-        storing_location= BashOperator(
-        task_id='storing_location',
-        bash_command=f'echo -e ".separator "\|"\n.import {tmp_data_dir}location.csv location" | sqlite3 {sqlite_connection.host}'
-    )
+        store_location_sqlite=PythonOperator(
+            task_id='store_location_sqlite',
+            python_callable=_store_location_sqlite
+        )
     
     # Cleanup task    
     cleanup= BashOperator(
