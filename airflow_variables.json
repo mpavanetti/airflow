@@ -3,6 +3,6 @@
 	"weather_data_lon":"",
 	"weather_data_endpoint":"data/2.5/onecall/timemachine",
 	"weather_data_units":"metric",
-	"weather_data_tmp_directory":"/tmp/data/",
+	"weather_data_tmp_directory":"/opt/airflow/data/",
 	"weather_data_spark_code":"/opt/airflow/spark/spark_weather_data.py"
 }
