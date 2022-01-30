@@ -8,6 +8,7 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.providers.sqlite.operators.sqlite import SqliteOperator
+from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.operators.bash import BashOperator
 
 
@@ -329,91 +330,93 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
         trigger_rule='all_success'
     )
     
-    # TaskGroup for Creating SQLITE tables
-    with TaskGroup('create_sqlite_tables') as create_sqlite_tables:
+    # TaskGroup for Creating Postgres tables
+    with TaskGroup('create_postgres_tables') as create_postgres_tables:
         
     # Create table Location
-        creating_table_location = SqliteOperator(
+        creating_table_location = PostgresOperator(
             task_id='creating_table_location',
-            sqlite_conn_id='db_sqlite',
+            postgres_conn_id='postgres_default',
             sql='''
                 CREATE TABLE IF NOT EXISTS location (
-                    latitude TEXT NOT NULL,
-                    longitude TEXT NOT NULL,
-                    city TEXT NULL,
-                    state TEXT NULL,
-                    postcode TEXT NULL,
-                    country TEXT NULL,
+                    latitude VARCHAR(255) NOT NULL,
+                    longitude VARCHAR(255) NOT NULL,
+                    city VARCHAR(255) NULL,
+                    state VARCHAR(255) NULL,
+                    postcode VARCHAR(255) NULL,
+                    country VARCHAR(255) NULL,
                     PRIMARY KEY (latitude,longitude)
                 );
                 '''
         )
         
-        creating_table_requested_weather = SqliteOperator(
+       # Create Table Requested Weather 
+        creating_table_requested_weather = PostgresOperator(
             task_id='creating_table_requested_weather',
-            sqlite_conn_id='db_sqlite',
+            postgres_conn_id='postgres_default',
             sql='''
                 CREATE TABLE IF NOT EXISTS requested_weather (
-                    latitude TEXT NOT NULL,
-                    longitude TEXT NOT NULL,
-                    timezone TEXT NOT NULL,
-                    requested_datetime TEXT NULL,
-                    sunrise TEXT NULL,
-                    sunset TEXT NULL,
-                    temp TEXT NULL,
-                    feels_like TEXT NULL,
-                    pressure TEXT NULL,
-                    humidity TEXT NULL,
-                    dew_point TEXT NULL,
-                    uvi TEXT NULL,
-                    clouds TEXT NULL,
-                    visibility TEXT NULL,
-                    wind_speed TEXT NULL,
-                    wind_deg TEXT NULL,
-                    weather_id TEXT NULL,
-                    weather_main TEXT NULL,
-                    weather_description TEXT NULL,
-                    weather_icon TEXT NULL,
+                    latitude VARCHAR(255) NOT NULL,
+                    longitude VARCHAR(255) NOT NULL,
+                    timezone VARCHAR(255) NOT NULL,
+                    requested_datetime VARCHAR(255) NULL,
+                    sunrise VARCHAR(255) NULL,
+                    sunset VARCHAR(255) NULL,
+                    temp VARCHAR(255) NULL,
+                    feels_like VARCHAR(255) NULL,
+                    pressure VARCHAR(255) NULL,
+                    humidity VARCHAR(255) NULL,
+                    dew_point VARCHAR(255) NULL,
+                    uvi VARCHAR(255) NULL,
+                    clouds VARCHAR(255) NULL,
+                    visibility VARCHAR(255) NULL,
+                    wind_speed VARCHAR(255) NULL,
+                    wind_deg VARCHAR(255) NULL,
+                    weather_id VARCHAR(255) NULL,
+                    weather_main VARCHAR(255) NULL,
+                    weather_description VARCHAR(255) NULL,
+                    weather_icon VARCHAR(255) NULL,
                     PRIMARY KEY (latitude,longitude,requested_datetime)
                 );
                 '''
         )
         
-        creating_table_hourly_weather = SqliteOperator(
+        # Create Table Hourly Weather
+        creating_table_hourly_weather = PostgresOperator(
             task_id='creating_table_hourly_weather',
-            sqlite_conn_id='db_sqlite',
+            postgres_conn_id='postgres_default',
             sql='''
                 CREATE TABLE IF NOT EXISTS hourly_weather (
-                    latitude TEXT NOT NULL,
-                    longitude TEXT NOT NULL,
-                    timezone TEXT NOT NULL,
-                    datetime TEXT NULL,
-                    temp TEXT NULL,
-                    feels_like TEXT NULL,
-                    pressure TEXT NULL,
-                    humidity TEXT NULL,
-                    dew_point TEXT NULL,
-                    uvi TEXT NULL,
-                    clouds TEXT NULL,
-                    visibility TEXT NULL,
-                    wind_speed TEXT NULL,
-                    wind_deg TEXT NULL,
-                    wind_gust TEXT NULL,
-                    weather_id TEXT NULL,
-                    weather_main TEXT NULL,
-                    weather_description TEXT NULL,
-                    weather_icon TEXT NULL,
+                    latitude VARCHAR(255) NOT NULL,
+                    longitude VARCHAR(255) NOT NULL,
+                    timezone VARCHAR(255) NOT NULL,
+                    datetime VARCHAR(255) NULL,
+                    temp VARCHAR(255) NULL,
+                    feels_like VARCHAR(255) NULL,
+                    pressure VARCHAR(255) NULL,
+                    humidity VARCHAR(255) NULL,
+                    dew_point VARCHAR(255) NULL,
+                    uvi VARCHAR(255) NULL,
+                    clouds VARCHAR(255) NULL,
+                    visibility VARCHAR(255) NULL,
+                    wind_speed VARCHAR(255) NULL,
+                    wind_deg VARCHAR(255) NULL,
+                    wind_gust VARCHAR(255) NULL,
+                    weather_id VARCHAR(255) NULL,
+                    weather_main VARCHAR(255) NULL,
+                    weather_description VARCHAR(255) NULL,
+                    weather_icon VARCHAR(255) NULL,
                     PRIMARY KEY (latitude,longitude,datetime)
                 );
                 '''
         )
 
-    # TaskGroup for Creating SQLITE Views
+    # TaskGroup for Creating Postgres Views
     with TaskGroup('create_materialized_views') as create_materialized_views:
         # Create View for DataSet 1
-        create_view_dataset_1 = SqliteOperator(
+        create_view_dataset_1 = PostgresOperator(
             task_id='create_view_dataset_1',
-            sqlite_conn_id='db_sqlite',
+            postgres_conn_id='postgres_default',
             sql='''
                 CREATE VIEW IF NOT EXISTS VW_DATASET_1
                 AS
@@ -433,9 +436,9 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
         )
         
         # Create View for DataSet 2
-        create_view_dataset_2 = SqliteOperator(
+        create_view_dataset_2 = PostgresOperator(
             task_id='create_view_dataset_2',
-            sqlite_conn_id='db_sqlite',
+            postgres_conn_id='postgres_default',
             sql='''
                 CREATE VIEW IF NOT EXISTS VW_DATASET_2
                 AS
@@ -499,4 +502,4 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
     
     # DAG Dependencies
     start >> pre_cleanup >> tmp_data >> check_api >> [extracting_weather,api_not_available]
-    extracting_weather >> create_sqlite_tables >> process_location_csv >> spark_process_weather >> store_processed_data_sqlite >> create_materialized_views >> post_cleanup
+    extracting_weather >> create_postgres_tables >> process_location_csv >> spark_process_weather >> store_processed_data_sqlite >> create_materialized_views >> post_cleanup
