@@ -407,6 +407,53 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
                 );
                 '''
         )
+
+    # TaskGroup for Creating SQLITE Views
+    with TaskGroup('create_materialized_views') as create_materialized_views:
+        # Create View for DataSet 1
+        create_view_dataset_1 = SqliteOperator(
+            task_id='create_view_dataset_1',
+            sqlite_conn_id='db_sqlite',
+            sql='''
+                CREATE VIEW IF NOT EXISTS VW_DATASET_1
+                AS
+                SELECT 
+                loc.country AS Country,
+                loc.state AS State,
+                loc.city AS City,
+                DATE(hw.datetime) AS Date,
+                strftime('%m', DATE(hw.datetime)) AS Month,
+                MAX(hw.temp) AS Max_Temperature
+                FROM location loc, hourly_weather hw
+                WHERE ROUND(loc.latitude,4) = hw.latitude
+                AND ROUND(loc.longitude,4) = hw.longitude
+                GROUP BY City,State,Country,Date,Month
+                ORDER BY Max_Temperature DESC;
+                '''
+        )
+        
+        # Create View for DataSet 2
+        create_view_dataset_2 = SqliteOperator(
+            task_id='create_view_dataset_2',
+            sqlite_conn_id='db_sqlite',
+            sql='''
+                CREATE VIEW IF NOT EXISTS VW_DATASET_2
+                AS
+                SELECT 
+                loc.country AS Country,
+                loc.state AS State,
+                loc.city AS City,
+                DATE(hw.datetime) AS Date,
+                MAX(hw.temp) AS Max_Temperature,
+                MIN(hw.temp) AS Min_Temperature,
+                AVG(hw.temp) AS Average_Temperature
+                FROM location loc, hourly_weather hw
+                WHERE ROUND(loc.latitude,4) = hw.latitude
+                AND ROUND(loc.longitude,4) = hw.longitude
+                GROUP BY City,State,Country,Date
+                ORDER BY Date DESC;
+                '''
+        )
         
     # Process Location Data
     process_location_csv = PythonOperator(
@@ -437,13 +484,19 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
             task_id='store_hourly_processed_csv_to_sqlite',
             python_callable=_store_hourly_processed_csv_to_sqlite
         )
+        
+    # Pre Cleanup task    
+    pre_cleanup= BashOperator(
+        task_id='pre_cleanup',
+        bash_command=f'rm -rf {tmp_data_dir}'
+    )    
     
-    # Cleanup task    
-    cleanup= BashOperator(
-        task_id='cleanup',
+    # Post Cleanup task    
+    post_cleanup= BashOperator(
+        task_id='post_cleanup',
         bash_command=f'rm -r {tmp_data_dir}'
     )
     
     # DAG Dependencies
-    start >> tmp_data >> check_api >> [extracting_weather,api_not_available]
-    extracting_weather >> create_sqlite_tables >> process_location_csv >> spark_process_weather >> store_processed_data_sqlite >> cleanup
+    start >> pre_cleanup >> tmp_data >> check_api >> [extracting_weather,api_not_available]
+    extracting_weather >> create_sqlite_tables >> process_location_csv >> spark_process_weather >> store_processed_data_sqlite >> create_materialized_views >> post_cleanup
