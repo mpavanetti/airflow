@@ -7,10 +7,8 @@ from airflow.providers.http.sensors.http import HttpSensor
 from airflow.operators.python import PythonOperator
 from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.utils.task_group import TaskGroup
-from airflow.providers.sqlite.operators.sqlite import SqliteOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.operators.bash import BashOperator
-
 
 # Importing Python Libraries
 from datetime import datetime, timedelta
@@ -22,11 +20,6 @@ from geopy.geocoders import Nominatim
 import csv, sqlite3
 import glob
 import requests
-
-# Spark Imports
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col,explode, element_at, expr,unix_timestamp, to_timestamp, to_date, regexp_replace
-
 
 # Default Arguments and attibutes
 default_args ={
@@ -55,6 +48,7 @@ latitude = Variable.get("weather_data_lat")
 longitude = Variable.get("weather_data_lon")
 units = Variable.get("weather_data_units")
 tmp_data_dir = Variable.get("weather_data_tmp_directory")
+weather_data_spark_code = Variable.get("weather_data_spark_code")
 
 # Suggested Locations
 
@@ -172,97 +166,6 @@ def _store_location_csv(lat,long):
     
     # Store Location
     location_df.to_csv(f'{tmp_data_dir}location.csv', mode='a', sep=',', index=None, header=False)
-
- 
-# Spark Process hourly weather
-def _spark_process_weather():
-    # Start Spark Session
-    spark = SparkSession \
-      .builder  \
-      .appName("weather_data")  \
-      .getOrCreate()
-      
-    # Read Data From Weather folder
-    df = spark.read.format("json") \
-            .option('inferSchema',True) \
-            .load(f'{tmp_data_dir}/weather/') \
-            .drop("timezone_offset")
-            
-    # Persist Data (MEMORY_AND_DISK) 
-    df.persist()
-    
-    # Add and processc olumns to df_hourly
-    df_hourly = df.withColumn('hourly',explode(col('hourly'))) \
-                .withColumn("datetime", to_timestamp(expr("hourly.dt")))    \
-                .withColumn("temp", expr("hourly.temp")) \
-                .withColumn("feels_like", expr("hourly.feels_like")) \
-                .withColumn("pressure", expr("hourly.pressure")) \
-                .withColumn("humidity", expr("hourly.humidity")) \
-                .withColumn("dew_point", expr("hourly.dew_point")) \
-                .withColumn("uvi", expr("hourly.uvi")) \
-                .withColumn("clouds", expr("hourly.clouds")) \
-                .withColumn("visibility", expr("hourly.visibility")) \
-                .withColumn("wind_speed", expr("hourly.wind_speed")) \
-                .withColumn("wind_deg", expr("hourly.wind_deg")) \
-                .withColumn("wind_gust", expr("hourly.wind_gust")) \
-                .withColumn("weather_id", expr("hourly.weather.id")) \
-                .withColumn("weather_id", element_at(col("weather_id"), 1)) \
-                .withColumn("weather_main", expr("hourly.weather.main")) \
-                .withColumn("weather_main", element_at(col("weather_main"), 1)) \
-                .withColumn("weather_description", expr("hourly.weather.description")) \
-                .withColumn("weather_description", element_at(col("weather_description"), 1)) \
-                .withColumn("weather_icon", expr("hourly.weather.icon")) \
-                .withColumn("weather_icon", element_at(col("weather_icon"), 1)) \
-                .withColumnRenamed('lat','latitude') \
-                .withColumnRenamed('lon','longitude') \
-                .drop("hourly","current") \
-                .coalesce(1)
-                
-    # Add and process column to df_current
-    df_current = df.withColumn("datetime", to_timestamp(expr("current.dt")))    \
-                .withColumn("sunrise", to_timestamp(expr("current.sunrise")))    \
-                .withColumn("sunset", to_timestamp(expr("current.sunset")))    \
-                .withColumn("temp", expr("current.temp")) \
-                .withColumn("feels_like", expr("current.feels_like")) \
-                .withColumn("pressure", expr("current.pressure")) \
-                .withColumn("humidity", expr("current.humidity")) \
-                .withColumn("dew_point", expr("current.dew_point")) \
-                .withColumn("uvi", expr("current.uvi")) \
-                .withColumn("clouds", expr("current.clouds")) \
-                .withColumn("visibility", expr("current.visibility")) \
-                .withColumn("wind_speed", expr("current.wind_speed")) \
-                .withColumn("wind_deg", expr("current.wind_deg")) \
-                .withColumn("weather_id", expr("current.weather.id")) \
-                .withColumn("weather_id", element_at(col("weather_id"), 1)) \
-                .withColumn("weather_main", expr("current.weather.main")) \
-                .withColumn("weather_main", element_at(col("weather_main"), 1)) \
-                .withColumn("weather_description", expr("current.weather.description")) \
-                .withColumn("weather_description", element_at(col("weather_description"), 1)) \
-                .withColumn("weather_icon", expr("current.weather.icon")) \
-                .withColumn("weather_icon", element_at(col("weather_icon"), 1)) \
-                .withColumnRenamed('lat','latitude') \
-                .withColumnRenamed('lon','longitude') \
-                .drop("hourly","current") \
-                .coalesce(1)
-                
-    # Write df_current            
-    df_current.write \
-    .format('csv') \
-    .mode('overwrite') \
-    .option('header',False) \
-    .option('sep',',') \
-    .save(f'{tmp_data_dir}processed/current_weather/')
-    
-    # Write df_hourly                            
-    df_hourly.write \
-    .format('csv') \
-    .mode('overwrite') \
-    .option('header',False) \
-    .option('sep',',') \
-    .save(f'{tmp_data_dir}processed/hourly_weather/')
-    
-    # Unpersist df
-    df.unpersist()
 
 # Processed files
 def get_current_weather_file():
@@ -493,11 +396,11 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
         python_callable=_process_location_csv_iterative
     )
     
-    # Spark Process Weather
-    spark_process_weather=PythonOperator(
+    # spark-submit
+    spark_process_weather= BashOperator(
         task_id='spark_process_weather',
-        python_callable=_spark_process_weather
-    )
+        bash_command=f'spark-submit {weather_data_spark_code}'
+    )   
         
     # TaskGroup for Storing processed data into postgres temp tables
     with TaskGroup('store_processed_temp_data_in_postgres') as store_processed_temp_data_in_postgres:
