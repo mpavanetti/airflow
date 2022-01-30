@@ -10,10 +10,11 @@ if __name__ == '__main__':
     tmp_data_dir = Variable.get("weather_data_tmp_directory")
 
     # Start Spark Session
-    spark = SparkSession \
-        .builder  \
-        .appName("weather_data")  \
-        .getOrCreate()
+    spark = (SparkSession 
+        .builder  
+        .master("spark://localhost:7077")
+        .appName("weather_data")  
+        .getOrCreate())
         
     # Read Data From Weather folder
     df = spark.read.format("json") \

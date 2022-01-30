@@ -398,7 +398,7 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
     # spark-submit
     spark_process_weather= BashOperator(
         task_id='spark_process_weather',
-        bash_command=f'spark-submit {weather_data_spark_code}'
+        bash_command=f'python3 {weather_data_spark_code}'
     )   
         
     # TaskGroup for Storing processed data into postgres temp tables
