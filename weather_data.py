@@ -180,73 +180,25 @@ def _store_location_sqlite():
     cur.executemany('INSERT OR IGNORE INTO location VALUES (?,?,?,?,?,?)',reader)
     conn.commit()
  
-# Spark Process requested weather
-def _spark_process_requested_weather():
+# Spark Process hourly weather
+def _spark_process_weather():
+    # Start Spark Session
     spark = SparkSession \
       .builder  \
-      .appName("current_data")  \
+      .appName("weather_data")  \
       .getOrCreate()
       
+    # Read Data From Weather folder
     df = spark.read.format("json") \
             .option('inferSchema',True) \
             .load(f'{tmp_data_dir}/weather/') \
             .drop("timezone_offset")
-          
-    df_stg = df.withColumn("datetime", to_timestamp(expr("current.dt")))    \
-                .withColumn("sunrise", to_timestamp(expr("current.sunrise")))    \
-                .withColumn("sunset", to_timestamp(expr("current.sunset")))    \
-                .withColumn("temp", expr("current.temp")) \
-                .withColumn("feels_like", expr("current.feels_like")) \
-                .withColumn("pressure", expr("current.pressure")) \
-                .withColumn("humidity", expr("current.humidity")) \
-                .withColumn("dew_point", expr("current.dew_point")) \
-                .withColumn("uvi", expr("current.uvi")) \
-                .withColumn("clouds", expr("current.clouds")) \
-                .withColumn("visibility", expr("current.visibility")) \
-                .withColumn("wind_speed", expr("current.wind_speed")) \
-                .withColumn("wind_deg", expr("current.wind_deg")) \
-                .withColumn("weather_id", expr("current.weather.id")) \
-                .withColumn("weather_id", element_at(col("weather_id"), 1)) \
-                .withColumn("weather_main", expr("current.weather.main")) \
-                .withColumn("weather_main", element_at(col("weather_main"), 1)) \
-                .withColumn("weather_description", expr("current.weather.description")) \
-                .withColumn("weather_description", element_at(col("weather_description"), 1)) \
-                .withColumn("weather_icon", expr("current.weather.icon")) \
-                .withColumn("weather_icon", element_at(col("weather_icon"), 1)) \
-                .drop("hourly","current","timezone_offset")
             
-    final_df = df_stg.withColumnRenamed('lat','latitude') \
-                .withColumnRenamed('lon','longitude') \
-                .coalesce(1)
-            
-    final_df.write \
-    .format('csv') \
-    .mode('overwrite') \
-    .option('header',False) \
-    .option('sep',',') \
-    .save(f'{tmp_data_dir}processed/current_weather/')
+    # Persist Data (MEMORY_AND_DISK) 
+    df.persist()
     
-# Store Requested Weather SQLite
-def _store_requested_weather_sqlite():
-    conn = create_connection()
-    cur = conn.cursor()
-    reader = csv.reader(open(glob.glob(f'{tmp_data_dir}processed/current_weather/part-*.csv')[0]))
-    cur.executemany('INSERT OR IGNORE INTO requested_weather VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',reader)
-    conn.commit()
-    
-# Spark Process hourly weather
-def _spark_process_hourly_weather():
-    spark = SparkSession \
-      .builder  \
-      .appName("hourly_data")  \
-      .getOrCreate()
-      
-    df = spark.read.format("json") \
-            .option('inferSchema',True) \
-            .load(f'{tmp_data_dir}/weather/') \
-            .drop("current","timezone_offset")
-
-    df_stg = df.withColumn('hourly',explode(col('hourly'))) \
+    # Add and processc olumns to df_hourly
+    df_hourly = df.withColumn('hourly',explode(col('hourly'))) \
                 .withColumn("datetime", to_timestamp(expr("hourly.dt")))    \
                 .withColumn("temp", expr("hourly.temp")) \
                 .withColumn("feels_like", expr("hourly.feels_like")) \
@@ -267,19 +219,66 @@ def _spark_process_hourly_weather():
                 .withColumn("weather_description", element_at(col("weather_description"), 1)) \
                 .withColumn("weather_icon", expr("hourly.weather.icon")) \
                 .withColumn("weather_icon", element_at(col("weather_icon"), 1)) \
-                .drop("hourly")
-                
-    final_df = df_stg.withColumnRenamed('lat','latitude') \
+                .withColumnRenamed('lat','latitude') \
                 .withColumnRenamed('lon','longitude') \
+                .drop("hourly","current") \
                 .coalesce(1)
                 
-    final_df.write \
+    # Add and process column to df_current
+    df_current = df.withColumn("datetime", to_timestamp(expr("current.dt")))    \
+                .withColumn("sunrise", to_timestamp(expr("current.sunrise")))    \
+                .withColumn("sunset", to_timestamp(expr("current.sunset")))    \
+                .withColumn("temp", expr("current.temp")) \
+                .withColumn("feels_like", expr("current.feels_like")) \
+                .withColumn("pressure", expr("current.pressure")) \
+                .withColumn("humidity", expr("current.humidity")) \
+                .withColumn("dew_point", expr("current.dew_point")) \
+                .withColumn("uvi", expr("current.uvi")) \
+                .withColumn("clouds", expr("current.clouds")) \
+                .withColumn("visibility", expr("current.visibility")) \
+                .withColumn("wind_speed", expr("current.wind_speed")) \
+                .withColumn("wind_deg", expr("current.wind_deg")) \
+                .withColumn("weather_id", expr("current.weather.id")) \
+                .withColumn("weather_id", element_at(col("weather_id"), 1)) \
+                .withColumn("weather_main", expr("current.weather.main")) \
+                .withColumn("weather_main", element_at(col("weather_main"), 1)) \
+                .withColumn("weather_description", expr("current.weather.description")) \
+                .withColumn("weather_description", element_at(col("weather_description"), 1)) \
+                .withColumn("weather_icon", expr("current.weather.icon")) \
+                .withColumn("weather_icon", element_at(col("weather_icon"), 1)) \
+                .withColumnRenamed('lat','latitude') \
+                .withColumnRenamed('lon','longitude') \
+                .drop("hourly","current") \
+                .coalesce(1)
+                
+    # Write df_current            
+    df_current.write \
+    .format('csv') \
+    .mode('overwrite') \
+    .option('header',False) \
+    .option('sep',',') \
+    .save(f'{tmp_data_dir}processed/current_weather/')
+    
+    # Write df_hourly                            
+    df_hourly.write \
     .format('csv') \
     .mode('overwrite') \
     .option('header',False) \
     .option('sep',',') \
     .save(f'{tmp_data_dir}processed/hourly_weather/')
+    
+    # Unpersist df
+    df.unpersist()
 
+# Store Requested Weather SQLite
+def _store_requested_weather_sqlite():
+    conn = create_connection()
+    cur = conn.cursor()
+    reader = csv.reader(open(glob.glob(f'{tmp_data_dir}processed/current_weather/part-*.csv')[0]))
+    cur.executemany('INSERT OR IGNORE INTO requested_weather VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',reader)
+    conn.commit()
+
+# Store Hourly Wather SQLite
 def _store_hourly_processed_csv_to_sqlite():
     conn = create_connection()
     cur = conn.cursor()
@@ -415,16 +414,10 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
         python_callable=_process_location_csv_iterative
     )
     
-    # Spark Process Requested(Current) Weather
-    spark_process_requested_weather=PythonOperator(
-        task_id='spark_process_requested_weather',
-        python_callable=_spark_process_requested_weather
-    )
-    
-    # Spark Process Hourly Weather
-    spark_process_hourly_weather=PythonOperator(
-        task_id='spark_process_hourly_weather',
-        python_callable=_spark_process_hourly_weather
+    # Spark Process Weather
+    spark_process_weather=PythonOperator(
+        task_id='spark_process_weather',
+        python_callable=_spark_process_weather
     )
         
     # TaskGroup for Spark Processors
@@ -453,4 +446,4 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
     
     # DAG Dependencies
     start >> tmp_data >> check_api >> [extracting_weather,api_not_available]
-    extracting_weather >> create_sqlite_tables >> process_location_csv >> spark_process_requested_weather >> spark_process_hourly_weather >> store_processed_data_sqlite >> cleanup
+    extracting_weather >> create_sqlite_tables >> process_location_csv >> spark_process_weather >> store_processed_data_sqlite >> cleanup
