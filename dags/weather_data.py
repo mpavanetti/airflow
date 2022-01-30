@@ -41,7 +41,6 @@ while i < 6:
 
 # Get Connection from airflow db
 api_connection = BaseHook.get_connection("openweathermapApi")
-sqlite_connection = BaseHook.get_connection("db_sqlite")
 
 # Get Variables
 latitude = Variable.get("weather_data_lat")
