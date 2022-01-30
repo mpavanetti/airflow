@@ -547,7 +547,8 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
                     FROM location_tmp
                     EXCEPT
                     SELECT * 
-                    FROM location;
+                    FROM location
+                    ON CONFLICT (latitude,longitude) DO NOTHING;
                 ''' 
         )
         
@@ -560,7 +561,8 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
                     FROM current_weather_tmp
                     EXCEPT
                     SELECT * 
-                    FROM current_weather;
+                    FROM current_weather
+                    ON CONFLICT (latitude,longitude,requested_datetime) DO NOTHING;
                 ''' 
         )
         
@@ -573,7 +575,8 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
                     FROM hourly_weather_tmp
                     EXCEPT
                     SELECT * 
-                    FROM hourly_weather;
+                    FROM hourly_weather
+                    ON CONFLICT (latitude,longitude,datetime) DO NOTHING;
                 ''' 
         )
         
