@@ -41,11 +41,11 @@ host: https://api.openweathermap.org/
 password: 2647339921cbe5b6eab93ee70ab23453  
 
 ### Spark Connection
-Conn Id: spark_default
-Conn Type: Spark
-host: spark://spark
-port: 7077
-
+Conn Id: spark_default  
+Conn Type: Spark  
+host: spark://spark  
+port: 7077  
+  
 
 ## Data Pipeline Run
 Go to airflow DAGs view , turn on the dag weather_data, and trigger it.  
