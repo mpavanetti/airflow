@@ -12,7 +12,7 @@ if __name__ == '__main__':
     # Start Spark Session
     spark = (SparkSession 
         .builder  
-        .master("spark://localhost:7077")
+        .master("spark://spark:7077")
         .appName("weather_data")  
         .getOrCreate())
         
