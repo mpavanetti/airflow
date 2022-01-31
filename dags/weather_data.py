@@ -93,15 +93,6 @@ def _tmp_data():
         os.mkdir(f'{tmp_data_dir}processed/hourly_weather/')
     
         
-# create a database connection to the SQLite database specified by db_file    
-def create_connection():
-    conn = None
-    try:
-        conn = sqlite3.connect(sqlite_connection.host)
-    except Error as e:
-        print(e)
-    return conn
-
 # Extract Weather
 def _extract_weather():
     if((Variable.get("weather_data_lat") == None or Variable.get("weather_data_lat") == '') and (Variable.get("weather_data_lon") == None or Variable.get("weather_data_lon") == '')):    
