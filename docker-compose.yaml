@@ -11,10 +11,11 @@ x-airflow-common:
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKEND: 'airflow.api.auth.backend.basic_auth'
-    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:- pyspark geopy apache-airflow[postgres] apache-airflow-providers-apache-spark}
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:- geopy apache-airflow[postgres] apache-airflow-providers-apache-spark apache-airflow-providers-apache-hive}
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
+    - ./data:/opt/airflow/data
     - ./plugins:/opt/airflow/plugins
     - ./spark:/opt/airflow/spark
 
