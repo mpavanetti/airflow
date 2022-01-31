@@ -9,6 +9,7 @@ from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.operators.bash import BashOperator
+from airflow.contrib.operators.spark_submit_operator import SparkSubmitOperator
 
 # Importing Python Libraries
 from datetime import datetime, timedelta
@@ -394,12 +395,11 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
         task_id='process_location_csv',
         python_callable=_process_location_csv_iterative
     )
-    
-    # spark-submit
-    spark_process_weather= BashOperator(
-        task_id='spark_process_weather',
-        bash_command=f'python3 {weather_data_spark_code}'
-    )   
+     
+    # Spark Submit
+    spark_process_weather = SparkSubmitOperator(
+        application=f'{weather_data_spark_code}', task_id="spark_process_weather"
+    )
         
     # TaskGroup for Storing processed data into postgres temp tables
     with TaskGroup('store_processed_temp_data_in_postgres') as store_processed_temp_data_in_postgres:
