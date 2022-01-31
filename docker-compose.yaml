@@ -62,6 +62,15 @@ services:
       interval: 5s
       retries: 5
     restart: always
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "postgres@email.com"
+      PGADMIN_DEFAULT_PASSWORD: "postgres"
+    ports:
+      - "15432:80"
+    depends_on:
+      - postgres
 
   airflow-webserver:
     <<: *airflow-common
