@@ -31,8 +31,11 @@ sudo docker-compose run airflow-cli connections import /app/airflow_connections.
 # Add permissions
 sudo chmod -R 777 ../airflow
 ```
+  
+In case you have any issues while importing airflow connections and variables, take the json files and import it manually.  
+  
+Note that you can enter manually latitude and logitude in the airflow varaibles one by one, or you if you let it as blank, the script will suggest 10 different location.  
 
-In case you have any issues while importing airflow connections and variables, take the json files and import it manually.
 
 ## Accesses
 Access the Airflow UI through the link http://localhost:8080/  
