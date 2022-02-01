@@ -1,0 +1,14 @@
+{
+    "Servers": {
+        "1": {
+            "Name": "postgres@email.com",
+            "Group": "Servers",
+            "Host": "postgres",
+            "Port": 5432,
+            "MaintenanceDB": "airflow",
+            "Username": "airflow",
+            "SSLMode": "prefer",
+            "PassFile": "/pgpassfile"
+        }
+    }
+}
