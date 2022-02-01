@@ -12,7 +12,7 @@ if __name__ == '__main__':
     # Start Spark Session
     spark = (SparkSession 
         .builder  
-        .master("spark://spark:7077")
+        .master("local[2]")
         .appName("weather_data")  
         .getOrCreate())
         
@@ -87,6 +87,8 @@ if __name__ == '__main__':
     .option('sep',',') \
     .save(f'{tmp_data_dir}processed/current_weather/')
 
+    #df_current.show(10)
+
     # Write df_hourly                            
     df_hourly.write \
     .format('csv') \
@@ -94,3 +96,5 @@ if __name__ == '__main__':
     .option('header',False) \
     .option('sep',',') \
     .save(f'{tmp_data_dir}processed/hourly_weather/')
+
+    #df_hourly.show(10)
