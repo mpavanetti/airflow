@@ -38,7 +38,7 @@ Note that you can enter manually latitude and logitude in the airflow varaibles 
 
 Note that the temperature results are in Celsius(units=metric), if you want to change to Fahrenheit open the variable file [airflow_variables.json](airflow_variables.json) and change the parameter weather_data_units to imperial. respectively standard for Kelvin.  
 
-Note for those changes take effect they need to be done before the docker commands, right after the git clone.  
+*Important, to Change the variables you can go at the variables section in apache airflow and change the values as you want any time you need or either do in the [airflow_variables.json](airflow_variables.json) and redeploy the containers which might not be very fast.
 
 
 
