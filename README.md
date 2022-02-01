@@ -27,6 +27,9 @@ sudo docker-compose up -d
 
 # Import Airflow connections and variables
 sudo docker-compose run airflow-cli connections import /app/airflow_connections.json && sudo docker-compose run airflow-cli variables import /app/airflow_variables.json
+
+# Add permissions
+sudo chmod -R 777 ../airflow
 ```
 
 In case you have any issues while importing airflow connections and variables, take the json files and import it manually.
