@@ -23,7 +23,7 @@ git clone https://github.com/mpavanetti/weather_pipeline .
 sudo docker build . -f Dockerfile --tag my-image:0.0.1
 
 # Run docker compose
-docker-compose up -d
+sudo docker-compose up -d
 
 # Import Airflow connections and variables
 sudo docker-compose run airflow-cli connections import /app/airflow_connections.json && sudo docker-compose run airflow-cli variables import /app/airflow_variables.json
