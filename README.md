@@ -34,7 +34,12 @@ sudo chmod -R 777 ../airflow
   
 In case you have any issues while importing airflow connections and variables, take the json files and import it manually.  
   
-Note that you can enter manually latitude and logitude in the airflow varaibles one by one, or you if you let it as blank, the script will suggest 10 different location.  
+Note that you can enter manually latitude and logitude in the airflow varaibles one by one, open the file [airflow_variables.json](airflow_variables.json) and change the parameters weather_data_lat and weather_data_lon respectively or you if you let it as blank, the script will suggest 10 different location.  
+
+Note that the temperature results are in Celsius(units=metric), if you want to change to Fahrenheit open the variable file [airflow_variables.json](airflow_variables.json) and change the parameter weather_data_units to imperial. respectively standard for Kelvin.  
+
+Note for those changes take effect they need to be done before the docker commands, right after the git clone.  
+
 
 
 ## Accesses
