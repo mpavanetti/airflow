@@ -1,7 +1,7 @@
 version: '3'
 x-airflow-common:
   &airflow-common
-  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.2.3}
+  image: ${AIRFLOW_IMAGE_NAME:-my-image:0.0.1}
   #build: .
   environment:
     &airflow-common-env
@@ -25,28 +25,6 @@ x-airflow-common:
     postgres:
       condition: service_healthy
 services:
-  spark:
-    image: docker.io/bitnami/spark:3
-    environment:
-      - SPARK_MODE=master
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
-    ports:
-      - '8081:8080'
-      - '7077:7077'
-  spark-worker:
-    image: docker.io/bitnami/spark:3
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark:7077
-      - SPARK_WORKER_MEMORY=1G
-      - SPARK_WORKER_CORES=1
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
   postgres:
     image: postgres:13
     environment:
@@ -57,6 +35,7 @@ services:
       - 5432:5432
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
+      - ./data:/opt/airflow/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 5s
@@ -71,6 +50,8 @@ services:
       - "15432:80"
     depends_on:
       - postgres
+    volumes:
+      - ./data:/opt/airflow/data
 
   airflow-webserver:
     <<: *airflow-common
@@ -167,6 +148,7 @@ services:
         fi
         mkdir -p /sources/logs /sources/dags /sources/plugins
         chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+        chmod -R 777 /opt/airflow/
         exec /entrypoint airflow version
     # yamllint enable rule:line-length
     environment:
