@@ -1,0 +1,31 @@
+{
+  "postgres_default": {
+        "conn_type":"postgres",
+        "host":"postgres",
+        "login":"airflow",
+        "password":"airflow",
+        "schema":"airflow",
+        "port":"5432",
+        "extra": null
+},
+
+    "openweathermapApi": {
+        "conn_type":"HTTP",
+        "host":"http://api.openweathermap.org/",
+        "login":null,
+        "password":"2647339921cbe5b6eab93ee70ab23453",
+        "schema":null,
+        "port":null,
+        "extra": null
+    },
+
+    "spark_default": {
+        "conn_type":"Spark",
+        "host":"spark://spark",
+        "login": null,
+        "password": null,
+        "schema": null,
+        "port":"7077",
+        "extra": null
+    }
+}
