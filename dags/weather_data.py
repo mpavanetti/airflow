@@ -187,12 +187,12 @@ with DAG('weather_data', schedule_interval='@daily',default_args=default_args, c
         http_conn_id='openweathermapApi',
         endpoint=Variable.get("weather_data_endpoint"),
         method='GET',
-        response_check=lambda response: True if response.status_code == 200 else False,
+        response_check=lambda response: True if response.status_code == 200 or response.status_code == 204 else False,
         poke_interval=5,
         timeout=60,
         retries=2,
         mode="reschedule",
-        soft_fail=True,
+        soft_fail=False,
         request_params = api_params
     )
     
