@@ -59,7 +59,8 @@ Check the final views
 SELECT * FROM VW_DATASET_1;  
 
 SELECT * FROM VW_DATASET_2;  
-
-
+  
+After running the airflow DAG pipeline, you should expect the following view result in postgresl:  
+![weather_data](img/views.JPG)
 
 Thanks.
