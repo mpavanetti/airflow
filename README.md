@@ -2,6 +2,17 @@
 ## Consuming Weather API and Storing on PostgreSql Database.
 
 ### This set of code and instructions has the porpouse to instanciate a compiled environment with set of docker images like airflow webserver, airflow scheduler, postgresql, pyspark.
+
+## Overview
+Extract the last 5 days of data from the free API: https://api.openweathermap.org/data/2.5/onecall/timemachine (Historical weather data) from 10 different locations.  
+Build a repository of data where we will keep the data extracted from the API. This repository should only have deduplicated data. Idempotency should also be guaranteed.  
+Build another repository of data that will contain the results of the following calculations from the data stored in step 2.  
+A dataset containing the location, date and temperature of the highest temperatures reported by location and month.  
+A dataset containing the average temperature, min temperature, location of min temperature, and location of max temperature per day.  
+Remote Infrastructure with all components required to the python workflow works.  
+  
+The set of scripts in Airflow DAG takes care of extracting historical data from the weather API based on 10 different location (5 days per location) and store it locally, light pre processing data and lookup with geopy API to enrich data with locations, store pre processed json files locally also, then the medium effort processing work is send to Spark local through airflow Spark Submit, where the spark script is sent to the local spark cluster, do all the data processing, filtering, aggregations and store back locally in the filesystem, then once the files are stored back as csv files, it runs postgres scripts to copy from (ingest) files to the postgres sql database, finally views are created with the aggregated queries in order to attend the request.   
+In Addition, the Dockerfile and docker-compose file scripts are in charge of spining up containers with everything needed to run the airflow DAG successfully end to end.  
   
 <br>  
 ## Requirements
