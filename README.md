@@ -14,7 +14,7 @@ Clone this repository into your linux working directory and navegate into it.
 run commands:
 ```
 # Create Local Folder and give permissions
-sudo mkdir airflow && chmod -R 777 airflow && cd airflow
+sudo mkdir airflow && sudo chmod -R 777 airflow && cd airflow
 
 # Clone Git repository to the created folder
 git clone https://github.com/mpavanetti/weather_pipeline .
