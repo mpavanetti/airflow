@@ -40,7 +40,7 @@ services:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 5s
       retries: 5
-    restart: always
+    restart: on-failure
   pgadmin:
     image: dpage/pgadmin4
     environment:
@@ -63,7 +63,7 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
-    restart: always
+    restart: on-failure
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
@@ -77,7 +77,7 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
-    restart: always
+    restart: on-failure
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
