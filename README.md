@@ -20,7 +20,7 @@ In Addition, the Dockerfile and docker-compose file scripts are in charge of spi
     
   
 ## Requirements
-* Linux Operational System (Ubuntu 20.04 Prefered)
+* Linux Operational System (Ubuntu 20.04 Prefered) or Windows and docker desktop.
 * [Git Versioning Software ](https://git-scm.com/download/linux)
 * [Docker Container Virtualization Software](https://docs.docker.com/engine/install/ubuntu/)
 * [Docker-Compose multi-container Docker applications](https://docs.docker.com/compose/install/)
@@ -36,9 +36,6 @@ sudo mkdir airflow && sudo chmod -R 777 airflow && cd airflow
 
 # Clone Git repository to the created folder
 git clone https://github.com/mpavanetti/weather_pipeline .
-
-# Build custom docker image
-sudo docker build . -f Dockerfile --tag my-image:0.0.1
 
 # Run docker compose
 sudo docker-compose up -d
