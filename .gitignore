@@ -1,3 +1,4 @@
 dags/__pycache__
 logs/*
 data/*
+.databricks/*
