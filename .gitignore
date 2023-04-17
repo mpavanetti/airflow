@@ -1,2 +1,3 @@
 dags/__pycache__
-logs/
+logs/*
+data/*
