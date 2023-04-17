@@ -44,11 +44,11 @@ from datetime import datetime
 class Env:
   
   # Datalake
-  datalakeDir="abfss://datalake@FILLIN.core.windows.net/"
+  datalakeDir="abfss://datalake@FILLIN.dfs.core.windows.net/"
   workdir=f"{datalakeDir}opendentalfhir/" 
   
   # Unity Catalog
-  catalog="sdkcatalog"
+  catalog="FILLIN"
   catalog_bronze=f"{catalog}.bronze"
   catalog_silver=f"{catalog}.silver"
   catalog_gold=f"{catalog}.gold"
