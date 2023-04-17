@@ -24,7 +24,8 @@ import requests
 
 # Default Arguments and attibutes
 default_args ={
-    'start_date': datetime.today() - timedelta(days=1)
+    'start_date': datetime.today() - timedelta(days=1),
+    'owner': 'Matheus'
 }
 
 # Get Current date, subtract 5 days and convert to timestamp
