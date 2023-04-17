@@ -16,5 +16,5 @@ USER airflow
 
 WORKDIR /app
 
-COPY airflow_variables.json /app
-COPY airflow_connections.json /app
+COPY variables/airflow_variables.json /app
+COPY variables/airflow_connections.json /app
