@@ -28,9 +28,9 @@
 # Run this to Authenticate on storage account
 spark.conf.set("fs.azure.account.auth.type", "OAuth")
 spark.conf.set("fs.azure.account.oauth.provider.type", "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")
-spark.conf.set("fs.azure.account.oauth2.client.id", dbutils.secrets.get('kv-dev-sdk', 'FILLIN'))
-spark.conf.set("fs.azure.account.oauth2.client.secret", dbutils.secrets.get('kv-dev-sdk', 'FILLIN'))
-spark.conf.set("fs.azure.account.oauth2.client.endpoint", f"https://login.microsoftonline.com/{dbutils.secrets.get('kv-dev-sdk', 'id--tenantid')}/oauth2/token")
+spark.conf.set("fs.azure.account.oauth2.client.id", dbutils.secrets.get('FILLIN', 'FILLIN'))
+spark.conf.set("fs.azure.account.oauth2.client.secret", dbutils.secrets.get('FILLIN', 'FILLIN'))
+spark.conf.set("fs.azure.account.oauth2.client.endpoint", f"https://login.microsoftonline.com/{dbutils.secrets.get('FILLIN', 'FILLIN')}/oauth2/token")
 
 # COMMAND ----------
 
