@@ -18,6 +18,7 @@ x-airflow-common:
     - ./data:/opt/airflow/data
     - ./plugins:/opt/airflow/plugins
     - ./spark:/opt/airflow/spark
+    - ./variables:/opt/airflow/variables
 
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
