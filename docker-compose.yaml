@@ -19,6 +19,7 @@ x-airflow-common:
     - ./plugins:/opt/airflow/plugins
     - ./spark:/opt/airflow/spark
     - ./variables:/opt/airflow/variables
+    - ./jars:/opt/airflow/jars
 
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
