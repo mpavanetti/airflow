@@ -41,7 +41,8 @@ git clone https://github.com/mpavanetti/weather_pipeline .
 sudo docker-compose up -d
 
 # Import Airflow connections and variables
-sudo docker-compose run airflow-cli connections import /app/airflow_connections.json && sudo docker-compose run airflow-cli variables import /app/airflow_variables.json
+docker exec -it airflow-airflow-scheduler-1 airflow connections import /app/airflow_connections.json
+docker exec -it airflow-airflow-scheduler-1 airflow variables import /app/airflow_variables.json
 
 # Add permissions
 sudo chmod -R 777 ../airflow
