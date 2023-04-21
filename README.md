@@ -101,7 +101,7 @@ sudo curl -L https://github.com/docker/compose/releases/download/v2.17.2/docker-
 sudo chmod +x /usr/local/bin/docker-compose
 
 # Install tiny file manager
-sudo docker run -d -v ./filemanager:/var/www/html -p 80:80 -v ./dags:/var/www/html/data/dags -v ./logs:/var/www/html/data/logs -v ./plugins:/var/www/html/data/plugins --restart=always --name filemanager tinyfilemanager/tinyfilemanager:master
+sudo docker run -d -v ./filemanager:/var/www/html -p 80:80 -v ./dags:/var/www/html/data/dags -v ./logs:/var/www/html/data/logs -v ./plugins:/var/www/html/data/plugins -v ./spark:/var/www/html/data/spark -v ./jars:/var/www/html/data/jars -v ./variables:/var/www/html/data/variables --restart=always --name filemanager tinyfilemanager/tinyfilemanager:master
 
 Default username/password: admin/admin@123 and user/12345
 
