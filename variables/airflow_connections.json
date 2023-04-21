@@ -27,5 +27,15 @@
         "schema": null,
         "port":"7077",
         "extra": null
+    },
+
+    "databricks_default": {
+        "conn_type":"databricks",
+        "host":"https://ACCOUNTID.azuredatabricks.net/",
+        "login": "token",
+        "password": "",
+        "schema": null,
+        "port": null,
+        "extra": null
     }
 }
