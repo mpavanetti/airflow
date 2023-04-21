@@ -14,7 +14,7 @@ x-airflow-common:
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:- geopy apache-airflow[postgres] apache-airflow-providers-apache-spark apache-airflow-providers-databricks}
   volumes:
     - ./dags:/opt/airflow/dags
-    #- ./logs:/opt/airflow/logs
+    - ./logs:/opt/airflow/logs
     - ./data:/opt/airflow/data
     - ./plugins:/opt/airflow/plugins
     - ./spark:/opt/airflow/spark
