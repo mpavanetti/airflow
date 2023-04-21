@@ -103,4 +103,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 sudo docker run -d -v ./filemanager:/var/www/html -p 80:80 -v ./dags:/var/www/html/data/dags -v ./logs:/var/www/html/data/logs -v ./plugins:/var/www/html/data/plugins --restart=always --name filemanager tinyfilemanager/tinyfilemanager:master
 
 Default username/password: admin/admin@123 and user/12345
+
+# Airflow 2.5.3 with celery
+docker-compose -f docker-compose-celery.yaml up -d
 ```
