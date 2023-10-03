@@ -46,11 +46,6 @@ sudo docker exec -it airflow_airflow-worker_1 airflow variables import /opt/airf
 # Add permissions (If any write error happens)
 sudo chmod -R 777 ../airflow
 
-# Accessing
-http://localhost:8080/
-user: airflow
-password: airflow
-
 # Stop containers
 sudo docker-compose -f docker-compose-celery.yaml kill
 ```
