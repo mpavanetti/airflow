@@ -115,7 +115,15 @@ After running the airflow DAG pipeline, you should expect the following view res
 ![weather_data](img/views.JPG)
 
 Thanks.  
- 
+  
+
+## Images
+Airflow 2.7.1 Celery deployment dags:
+![airflowcelery](img/airflowcelerydags.png)
+  
+Weather_data DAG process:
+![weather_data](img/airflowcelery.png)
+   
 
 ## Extra notes
 
@@ -129,6 +137,4 @@ sudo docker run -d -v ./filemanager:/var/www/html -p 80:80 -v ./dags:/var/www/ht
 
 Default username/password: admin/admin@123 and user/12345
 
-# Airflow 2.7.1 with celery
-docker-compose -f docker-compose-celery.yaml up -d
 ```
