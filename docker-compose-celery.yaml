@@ -105,6 +105,18 @@ services:
       start_period: 5s
     restart: always
 
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "postgres@email.com"
+      PGADMIN_DEFAULT_PASSWORD: "postgres"
+    ports:
+      - "15432:80"
+    depends_on:
+      - postgres
+    volumes:
+      - ./data:/opt/airflow/data
+
   redis:
     image: redis:latest
     expose:
@@ -301,4 +313,4 @@ services:
         condition: service_completed_successfully
 
 volumes:
-  postgres-db-volume:
+  postgres-db-volume-celery:
