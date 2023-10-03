@@ -26,26 +26,53 @@ In Addition, the Dockerfile and docker-compose file scripts are in charge of spi
 * [Docker-Compose multi-container Docker applications](https://docs.docker.com/compose/install/)
 
 
-# Instructions
+# Instructions AIrflow 2.7.1 (CeleryExecutor) Heavier Version
 Clone this repository into your linux working directory and navegate into it.  
   
 run commands:
 ```
-# Create Local Folder and give permissions
-sudo mkdir airflow && sudo chmod -R 777 airflow && cd airflow
 
 # Clone Git repository to the created folder
-git clone https://github.com/mpavanetti/weather_pipeline .
+git clone https://github.com/mpavanetti/airflow .
+
+# Run docker compose
+sudo docker-compose -f docker-compose-celery.yaml up -d
+
+# Import Airflow connections and variables
+sudo docker exec -it airflow_airflow-worker_1 airflow connections import /opt/airflow/variables/airflow_connections.json
+sudo docker exec -it airflow_airflow-worker_1 airflow variables import /opt/airflow/variables/airflow_variables.json
+
+# Add permissions (If any write error happens)
+sudo chmod -R 777 ../airflow
+
+# Accessing
+http://localhost:8080/
+user: airflow
+password: airflow
+
+# Stop containers
+sudo docker-compose -f docker-compose-celery.yaml kill
+```
+  
+
+# Instructions AIrflow 2.2.3 (LocalExecutor) Lighter Version
+Clone this repository into your linux working directory and navegate into it.  
+  
+run commands:
+```
+
+# Clone Git repository to the created folder
+git clone https://github.com/mpavanetti/airflow .
 
 # Run docker compose
 sudo docker-compose up -d
 
 # Import Airflow connections and variables
-docker exec -it airflow-airflow-scheduler-1 airflow connections import /opt/airflow/variables/airflow_connections.json
-docker exec -it airflow-airflow-scheduler-1 airflow variables import /opt/airflow/variables/airflow_variables.json
+sudo docker exec -it airflow-airflow-scheduler-1 airflow connections import /opt/airflow/variables/airflow_connections.json
+sudo docker exec -it airflow-airflow-scheduler-1 airflow variables import /opt/airflow/variables/airflow_variables.json
 
-# Add permissions
-sudo chmod -R 777 ../airflow
+# Add permissions (If any write error happens)
+sudo chmod -R 755 ../airflow
 ```
   
 In case you have any issues while importing airflow connections and variables, take the json files and import it manually.  
@@ -105,6 +132,6 @@ sudo docker run -d -v ./filemanager:/var/www/html -p 80:80 -v ./dags:/var/www/ht
 
 Default username/password: admin/admin@123 and user/12345
 
-# Airflow 2.5.3 with celery
+# Airflow 2.7.1 with celery
 docker-compose -f docker-compose-celery.yaml up -d
 ```
