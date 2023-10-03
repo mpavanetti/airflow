@@ -73,14 +73,15 @@ x-airflow-common:
     # for other purpose (development, test and especially production usage) build/extend Airflow image.
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:- geopy apache-airflow[postgres] apache-airflow-providers-apache-spark apache-airflow-providers-databricks}
   volumes:
-    - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
-    - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
-    - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
-    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-    - ${AIRFLOW_PROJ_DIR:-.}/data:/opt/airflow/data
-    - ${AIRFLOW_PROJ_DIR:-.}/spark:/opt/airflow/spark
-    - ${AIRFLOW_PROJ_DIR:-.}/variables:/opt/airflow/variables
-    - ${AIRFLOW_PROJ_DIR:-.}/jars:/opt/airflow/jars
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./data:/opt/airflow/data
+    - ./plugins:/opt/airflow/plugins
+    - ./spark:/opt/airflow/spark
+    - ./variables:/opt/airflow/variables
+    - ./jars:/opt/airflow/jars
+    - ./config:/opt/airflow/config
+
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -98,6 +99,7 @@ services:
       POSTGRES_DB: airflow
     volumes:
       -  postgres-db-volume-celery:/var/lib/postgresql/data
+      - ./data:/opt/airflow/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 10s
