@@ -25,8 +25,9 @@ In Addition, the Dockerfile and docker-compose file scripts are in charge of spi
 * [Docker Container Virtualization Software](https://docs.docker.com/engine/install/ubuntu/)
 * [Docker-Compose multi-container Docker applications](https://docs.docker.com/compose/install/)
 
+  
 
-# Instructions AIrflow 2.7.1 (CeleryExecutor) Heavier Version
+## Instructions AIrflow 2.7.1 (CeleryExecutor) Heavier Version
 Clone this repository into your linux working directory and navegate into it.  
   
 run commands:
@@ -55,7 +56,8 @@ sudo docker-compose -f docker-compose-celery.yaml kill
 ```
   
 
-# Instructions AIrflow 2.2.3 (LocalExecutor) Lighter Version
+
+## Instructions AIrflow 2.2.3 (LocalExecutor) Lighter Version
 Clone this repository into your linux working directory and navegate into it.  
   
 run commands:
@@ -68,8 +70,8 @@ git clone https://github.com/mpavanetti/airflow .
 sudo docker-compose up -d
 
 # Import Airflow connections and variables
-sudo docker exec -it airflow-airflow-scheduler-1 airflow connections import /opt/airflow/variables/airflow_connections.json
-sudo docker exec -it airflow-airflow-scheduler-1 airflow variables import /opt/airflow/variables/airflow_variables.json
+sudo docker exec -it airflow_airflow-scheduler_1 airflow connections import /opt/airflow/variables/airflow_connections.json
+sudo docker exec -it airflow_airflow-scheduler_1 airflow variables import /opt/airflow/variables/airflow_variables.json
 
 # Add permissions (If any write error happens)
 sudo chmod -R 755 ../airflow
