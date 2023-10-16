@@ -17,6 +17,9 @@ Remote Infrastructure with all components required to the python workflow works.
 The set of scripts in Airflow DAG takes care of extracting historical data from the weather API based on 10 different location (5 days per location) and store it locally, light pre processing data and lookup with geopy API to enrich data with locations, store pre processed json files locally also, then the medium effort processing work is send to Spark local through airflow Spark Submit, where the spark script is sent to the local spark cluster, do all the data processing, filtering, aggregations and store back locally in the filesystem, then once the files are stored back as csv files, it runs postgres scripts to copy from (ingest) files to the postgres sql database, finally views are created with the aggregated queries in order to attend the request.     
 
 In Addition, the Dockerfile and docker-compose file scripts are in charge of spining up containers with everything needed to run the airflow DAG successfully end to end.  
+
+  
+Remember to sing up an account at https://home.openweathermap.org/ and create an API Token.
     
   
 ## Requirements
