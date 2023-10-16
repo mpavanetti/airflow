@@ -13,7 +13,7 @@
         "conn_type":"HTTP",
         "host":"http://api.openweathermap.org/",
         "login":null,
-        "password":"2647339921cbe5b6eab93ee70ab23453",
+        "password":"FILL UP WITH YOUR TOKEN",
         "schema":null,
         "port":null,
         "extra": null
@@ -33,7 +33,7 @@
         "conn_type":"databricks",
         "host":"https://ACCOUNTID.azuredatabricks.net/",
         "login": "token",
-        "password": "",
+        "password": "FILL UP WITH YOUR TOKEN",
         "schema": null,
         "port": null,
         "extra": null
