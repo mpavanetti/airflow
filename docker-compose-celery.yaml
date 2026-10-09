@@ -90,6 +90,7 @@ x-airflow-common:
     postgres:
       condition: service_healthy
 
+# Published ports are on 127.0.0.1 only: these services use development logins (README).
 services:
   postgres:
     image: postgres:13
@@ -113,7 +114,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: "postgres@email.com"
       PGADMIN_DEFAULT_PASSWORD: "postgres"
     ports:
-      - "15432:80"
+      - "127.0.0.1:15432:80"
     depends_on:
       - postgres
     volumes:
@@ -135,7 +136,7 @@ services:
     <<: *airflow-common
     command: webserver
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 30s
@@ -301,7 +302,7 @@ services:
     profiles:
       - flower
     ports:
-      - "5555:5555"
+      - "127.0.0.1:5555:5555"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:5555/"]
       interval: 30s

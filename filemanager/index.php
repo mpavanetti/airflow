@@ -26,16 +26,17 @@ $use_auth = true;
 // Login user name and password
 // Users: array('Username' => 'Password', 'Username2' => 'Password2', ...)
 // Generate secure password hash - https://tinyfilemanager.github.io/docs/pwd.html
-$auth_users = array(
-    'admin' => '$2y$10$/K.hjNr84lLNDt8fTXjoI.DBp6PpeyoJ.mGwrrLuCZfAwfSAGqhOW', //admin@123
-    'user' => '$2y$10$Fg6Dz8oH9fPoZ2jJan5tZuv6Z4Kp7avtQ9bDfrdRntXtPeiMAZyGO' //12345
-);
+// No built-in accounts (the old admin/admin@123 and user/12345 were public). Set TFM_USER and
+// TFM_PASSWORD_HASH, a bcrypt hash: php -r "echo password_hash('your password', PASSWORD_DEFAULT);"
+// Until both are set, nobody can sign in.
+$auth_users = array();
+if (getenv('TFM_USER') && getenv('TFM_PASSWORD_HASH')) {
+    $auth_users[getenv('TFM_USER')] = getenv('TFM_PASSWORD_HASH');
+}
 
 // Readonly users
 // e.g. array('users', 'guest', ...)
-$readonly_users = array(
-    'user'
-);
+$readonly_users = array();
 
 // Global readonly, including when auth is not being used
 $global_readonly = false;

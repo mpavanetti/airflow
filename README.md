@@ -135,9 +135,12 @@ Weather_data DAG process:
 sudo curl -L https://github.com/docker/compose/releases/download/v2.17.2/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
 
-# Install tiny file manager
-sudo docker run -d -v ./filemanager:/var/www/html -p 80:80 -v ./dags:/var/www/html/data/dags -v ./logs:/var/www/html/data/logs -v ./plugins:/var/www/html/data/plugins -v ./spark:/var/www/html/data/spark -v ./jars:/var/www/html/data/jars -v ./variables:/var/www/html/data/variables --restart=always --name filemanager tinyfilemanager/tinyfilemanager:master
+# Install tiny file manager. It can write DAGs and plugins, which Airflow runs, so it is
+# published on this machine only (127.0.0.1); reach it over SSH or a VPN, never the internet.
+# Choose your own login: TFM_USER, and TFM_PASSWORD_HASH from
+#   php -r "echo password_hash('your password', PASSWORD_DEFAULT);"
+sudo docker run -d -v ./filemanager:/var/www/html -p 127.0.0.1:8081:80 -e TFM_USER=you -e TFM_PASSWORD_HASH='<hash>' -v ./dags:/var/www/html/data/dags -v ./logs:/var/www/html/data/logs -v ./plugins:/var/www/html/data/plugins -v ./spark:/var/www/html/data/spark -v ./jars:/var/www/html/data/jars -v ./variables:/var/www/html/data/variables --restart=always --name filemanager tinyfilemanager/tinyfilemanager:master
 
-Default username/password: admin/admin@123 and user/12345
+There are no default accounts: sign in with TFM_USER and the password behind TFM_PASSWORD_HASH (http://127.0.0.1:8081).
 
 ```
