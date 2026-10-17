@@ -5,6 +5,7 @@
 
 ## Overview
 Extract the last 5 days of data from the free API: https://api.openweathermap.org/data/2.5/onecall/timemachine (Historical weather data) from 10 different locations.  
+Note: OpenWeather retired One Call API 2.5, this endpoint, in June 2024. The DAG needs porting to One Call API 3.0 (a separate subscription) before it can pull data again.  
 
 Build a repository of data where we will keep the data extracted from the API. This repository should only have deduplicated data. Idempotency should also be guaranteed.  
   
@@ -19,7 +20,8 @@ The set of scripts in Airflow DAG takes care of extracting historical data from 
 In Addition, the Dockerfile and docker-compose file scripts are in charge of spining up containers with everything needed to run the airflow DAG successfully end to end.  
 
   
-Remember to sing up an account at https://home.openweathermap.org/ and create an API Token.
+Remember to sign up an account at https://home.openweathermap.org/ and create an API Token.
+Put the token in the password of the openweathermapApi connection (Airflow UI, Admin > Connections) after importing the connections, rather than in [airflow_connections.json](variables/airflow_connections.json), which git tracks.
     
   
 ## Requirements
@@ -39,15 +41,17 @@ run commands:
 # Clone Git repository to the created folder
 git clone https://github.com/mpavanetti/airflow .
 
+# Run the containers as your own user, and give Airflow a key to encrypt connection passwords
+# (.env is tracked by git: don't commit your key)
+sed -i "s/^AIRFLOW_UID=.*/AIRFLOW_UID=$(id -u)/" .env
+grep -q '^AIRFLOW__CORE__FERNET_KEY=' .env || echo "AIRFLOW__CORE__FERNET_KEY=$(openssl rand -base64 32 | tr '+/' '-_')" >> .env
+
 # Run docker compose
 sudo docker-compose -f docker-compose-celery.yaml up -d
 
 # Import Airflow connections and variables
-sudo docker exec -it airflow_airflow-worker_1 airflow connections import /opt/airflow/variables/airflow_connections.json
-sudo docker exec -it airflow_airflow-worker_1 airflow variables import /opt/airflow/variables/airflow_variables.json
-
-# Add permissions (If any write error happens)
-sudo chmod -R 777 ../airflow
+sudo docker-compose -f docker-compose-celery.yaml exec airflow-worker airflow connections import /opt/airflow/variables/airflow_connections.json
+sudo docker-compose -f docker-compose-celery.yaml exec airflow-worker airflow variables import /opt/airflow/variables/airflow_variables.json
 
 # Stop containers
 sudo docker-compose -f docker-compose-celery.yaml kill
@@ -64,24 +68,26 @@ run commands:
 # Clone Git repository to the created folder
 git clone https://github.com/mpavanetti/airflow .
 
+# Run the containers as your own user, and give Airflow a key to encrypt connection passwords
+# (.env is tracked by git: don't commit your key)
+sed -i "s/^AIRFLOW_UID=.*/AIRFLOW_UID=$(id -u)/" .env
+grep -q '^AIRFLOW__CORE__FERNET_KEY=' .env || echo "AIRFLOW__CORE__FERNET_KEY=$(openssl rand -base64 32 | tr '+/' '-_')" >> .env
+
 # Run docker compose
 sudo docker-compose up -d
 
 # Import Airflow connections and variables
-sudo docker exec -it airflow_airflow-scheduler_1 airflow connections import /opt/airflow/variables/airflow_connections.json
-sudo docker exec -it airflow_airflow-scheduler_1 airflow variables import /opt/airflow/variables/airflow_variables.json
-
-# Add permissions (If any write error happens)
-sudo chmod -R 755 ../airflow
+sudo docker-compose exec airflow-scheduler airflow connections import /opt/airflow/variables/airflow_connections.json
+sudo docker-compose exec airflow-scheduler airflow variables import /opt/airflow/variables/airflow_variables.json
 ```
   
 In case you have any issues while importing airflow connections and variables, take the json files and import it manually.  
   
-Note that you can enter manually latitude and logitude in the airflow varaibles one by one, open the file [airflow_variables.json](airflow_variables.json) and change the parameters weather_data_lat and weather_data_lon respectively or you if you let it as blank, the script will suggest 10 different location.  
+Note that you can enter manually latitude and logitude in the airflow varaibles one by one, open the file [airflow_variables.json](variables/airflow_variables.json) and change the parameters weather_data_lat and weather_data_lon respectively or you if you let it as blank, the script will suggest 10 different location.  
 
-Note that the temperature results are in Celsius(units=metric), if you want to change to Fahrenheit open the variable file [airflow_variables.json](airflow_variables.json) and change the parameter weather_data_units to imperial. respectively standard for Kelvin.  
+Note that the temperature results are in Celsius(units=metric), if you want to change to Fahrenheit open the variable file [airflow_variables.json](variables/airflow_variables.json) and change the parameter weather_data_units to imperial. respectively standard for Kelvin.  
 
-*Important, to Change the variables you can go at the variables section in apache airflow and change the values as you want any time you need or either do in the [airflow_variables.json](airflow_variables.json) and redeploy the containers which might not be very fast.
+*Important, to Change the variables you can go at the variables section in apache airflow and change the values as you want any time you need or either do in the [airflow_variables.json](variables/airflow_variables.json) and redeploy the containers which might not be very fast.
 
 
 
@@ -95,7 +101,7 @@ Access Postgres Admin through the link http://localhost:15432/
 Username: postgres@email.com  
 Password: postgres
   
-Note: using localhost as example, in case the application sits on cloud virtual machines, the host will be given at your cloud machine instance, also make sure the ports are opened.
+Note: the ports are published on 127.0.0.1 only, as these logins are development defaults. When the containers run on a cloud virtual machine, reach them through an SSH tunnel (for example `ssh -L 8080:localhost:8080 -L 15432:localhost:15432 you@your-vm`) rather than opening the ports.
   
   
 ## Data Pipeline Run
@@ -105,7 +111,7 @@ Go to airflow DAGs view , turn on the dag weather_data, and trigger it.
 
 ## Checking DAG result
 
-Open the postgres admin in a chrome web browser, go to Servers and add a server with the information described in the json file [pgadmin.json](pgadmin.json)
+Open the postgres admin in a chrome web browser, go to Servers and add a server with the information described in the json file [pgadmin.json](pgadmin.json) (password: airflow)
   
 Check the final views  
 
@@ -139,7 +145,9 @@ sudo chmod +x /usr/local/bin/docker-compose
 # published on this machine only (127.0.0.1); reach it over SSH or a VPN, never the internet.
 # Choose your own login: TFM_USER, and TFM_PASSWORD_HASH from
 #   php -r "echo password_hash('your password', PASSWORD_DEFAULT);"
-sudo docker run -d -v ./filemanager:/var/www/html -p 127.0.0.1:8081:80 -e TFM_USER=you -e TFM_PASSWORD_HASH='<hash>' -v ./dags:/var/www/html/data/dags -v ./logs:/var/www/html/data/logs -v ./plugins:/var/www/html/data/plugins -v ./spark:/var/www/html/data/spark -v ./jars:/var/www/html/data/jars -v ./variables:/var/www/html/data/variables --restart=always --name filemanager tinyfilemanager/tinyfilemanager:master
+# The folders go on /data, outside the web root: under it, the image's PHP server would hand
+# them out without a login.
+sudo docker run -d -v ./filemanager:/var/www/html -p 127.0.0.1:8081:80 -e TFM_USER=you -e TFM_PASSWORD_HASH='<hash>' -v ./dags:/data/dags -v ./logs:/data/logs -v ./plugins:/data/plugins -v ./spark:/data/spark -v ./jars:/data/jars -v ./variables:/data/variables --restart=always --name filemanager tinyfilemanager/tinyfilemanager:master
 
 There are no default accounts: sign in with TFM_USER and the password behind TFM_PASSWORD_HASH (http://127.0.0.1:8081).
 

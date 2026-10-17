@@ -61,7 +61,9 @@ $default_timezone = 'Etc/UTC'; // UTC
 
 // Root path for file manager
 // use absolute path of directory i.e: '/var/www/folder' or $_SERVER['DOCUMENT_ROOT'].'/folder'
-$root_path = $_SERVER['DOCUMENT_ROOT'].'/data';
+// Kept outside the document root: the image's PHP server hands out any file under it without a
+// login (connections, DAGs, logs) and runs any .php there, so the folders are mounted on /data.
+$root_path = '/data';
 
 // Root url for links in file manager.Relative to $http_host. Variants: '', 'path/to/subfolder'
 // Will not working if $root_path will be outside of server document root
