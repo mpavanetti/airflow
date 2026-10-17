@@ -64,6 +64,7 @@ class Env:
   
   # Open Dental API variables.
   endpoint="https://api.opendental.com/fhir/v2/"
+  # Open Dental's public test-database key, published in the FHIR spec above; keep a real key in dbutils.secrets.
   token="ODFHIR NFF6i0KrXrxDkZHt/VzkmZEaUWOjnQX2z"
   resources=["organization","location",
             "patient","procedure","practitioner",
@@ -95,7 +96,7 @@ class Extract(Env):
     return dbutils.fs.rm(Env.raw,True)
   
   def cleanTmp(self):
-    return Env.wipeTmp()
+    return Env.wipeTmp(self)
   
   def pullData(self):
     headers={"Accept": "application/json",

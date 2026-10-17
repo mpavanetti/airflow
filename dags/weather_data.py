@@ -5,11 +5,10 @@ from airflow.hooks.base import BaseHook
 from airflow.models import Variable
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.operators.python import PythonOperator
-from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.operators.bash import BashOperator
-from airflow.contrib.operators.spark_submit_operator import SparkSubmitOperator
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 
 # Importing Python Libraries
 from datetime import datetime, timedelta
@@ -23,14 +22,11 @@ import glob
 import requests
 
 # Default Arguments and attibutes
+# A fixed start_date: one computed from today moves on every parse and keeps pushing the next run out.
 default_args ={
-    'start_date': datetime.today() - timedelta(days=1),
+    'start_date': datetime(2022, 1, 1),
     'owner': 'Matheus'
 }
-
-# Get Current date, subtract 5 days and convert to timestamp
-todayLessFiveDays =  datetime.today() - timedelta(days=5)
-todayLessFiveDaysTimestamp = time.mktime(todayLessFiveDays.timetuple())
 
 # Store last 5 days date into a list
 days=[]
@@ -40,9 +36,6 @@ while i < 6:
   todayLessFiveDaysTimestamp = time.mktime(todayLessFiveDays.timetuple())
   days.append(todayLessFiveDaysTimestamp)
   i += 1
-
-# Get Connection from airflow db
-api_connection = BaseHook.get_connection("openweathermapApi")
 
 # Get Variables
 latitude = Variable.get("weather_data_lat")
@@ -66,13 +59,14 @@ suggested_locations = (
       ['36.169941','-115.139832']
 )
 
-# weather data api query params
+# weather data api query params, rendered when the sensor runs: the API key stays out of the
+# serialized DAG in the metadata database, and dt no longer changes the DAG on every parse.
 api_params = {
     'lat':suggested_locations[0][0],
     'lon':suggested_locations[0][1],
     'units':units,
-    'dt':int(todayLessFiveDaysTimestamp),
-    'appid':api_connection.password,
+    'dt':'{{ macros.time.time() | int - 5 * 24 * 60 * 60 }}',
+    'appid':'{{ conn.openweathermapApi.password }}',
 }
 
 # Notify, Email
@@ -96,6 +90,7 @@ def _tmp_data():
         
 # Extract Weather
 def _extract_weather():
+    api_connection = BaseHook.get_connection("openweathermapApi")
     if((Variable.get("weather_data_lat") == None or Variable.get("weather_data_lat") == '') and (Variable.get("weather_data_lon") == None or Variable.get("weather_data_lon") == '')):    
         for latitude, longitude in suggested_locations:
             for day in days:
@@ -107,7 +102,8 @@ def _extract_weather():
                     'dt':int(day),
                     'appid':api_connection.password
                 }
-                r = requests.get(url = api_connection.host + Variable.get("weather_data_endpoint"), params = api_param)
+                r = requests.get(url = api_connection.host + Variable.get("weather_data_endpoint"), params = api_param, timeout=60)
+                r.raise_for_status()
                 data = r.json()
                 time = datetime.today().strftime('%Y%m%d%H%M%S%f')
                 with open(f"{tmp_data_dir}/weather/weather_output_{time}.json", "w") as outfile:
@@ -122,7 +118,8 @@ def _extract_weather():
                     'dt':int(day),
                     'appid':api_connection.password
                 }
-                r = requests.get(url = api_connection.host + Variable.get("weather_data_endpoint"), params = api_param)
+                r = requests.get(url = api_connection.host + Variable.get("weather_data_endpoint"), params = api_param, timeout=60)
+                r.raise_for_status()
                 data = r.json()
                 time = datetime.today().strftime('%Y%m%d%H%M%S%f')
                 with open(f"{tmp_data_dir}/weather/weather_output_{time}.json", "w") as outfile:
@@ -134,6 +131,7 @@ def _process_location_csv_iterative():
     if((latitude == None or latitude == '') and (longitude == None or longitude == '')):    
         for lat,long in suggested_locations:
             _store_location_csv(lat,long)
+            time.sleep(1) # Nominatim allows one request per second
     else:
         _store_location_csv(latitude,longitude)
    
@@ -142,7 +140,7 @@ def _store_location_csv(lat,long):
     
     # Invoking geo locator api and getting address from latitude and longitude
     geolocator = Nominatim(user_agent="weather_data")
-    location = geolocator.reverse(lat+","+long)
+    location = geolocator.reverse(lat+","+long, timeout=10)
     address = location.raw['address']
     #current = datetime.today().strftime('%Y%m%d%H%M%S%f')
     

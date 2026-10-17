@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from airflow.decorators import dag, task
-from airflow.contrib.operators.spark_submit_operator import SparkSubmitOperator
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.models import Variable
 
 # Variables

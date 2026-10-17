@@ -1,9 +1,6 @@
-from airflow.models import Variable
 from pyspark.sql import SparkSession
 
 if __name__ == '__main__':
-    spark_dir = Variable.get("spark_dir")
-    
     # Start Spark Session
     spark = (SparkSession 
                 .builder  
